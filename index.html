@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ContentVault — Social Media Planner</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0e12;
+    --surface: #16161d;
+    --surface2: #1e1e28;
+    --border: #2a2a38;
+    --accent-fb: #4f7fff;
+    --accent-li: #00b4a0;
+    --accent-dash: #ff6b6b;
+    --accent-set: #c084fc;
+    --text: #f0f0f5;
+    --muted: #7878a0;
+    --success: #4ade80;
+    --warning: #fbbf24;
+    --radius: 14px;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+    --card-bg: #16161d;
+    --input-bg: #0e0e12;
+  }
+  [data-theme="light"] {
+    --bg: #f4f4f8;
+    --surface: #ffffff;
+    --surface2: #eeeef5;
+    --border: #dddde8;
+    --text: #0e0e1a;
+    --muted: #6868a0;
+    --card-bg: #ffffff;
+    --input-bg: #f4f4f8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    transition: background 0.3s, color 0.3s;
+  }
+  /* ── NAV ── */
+  nav {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 24px;
+    height: 62px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    font-family: var(--font-head);
+    font-weight: 800;
+    font-size: 1.15rem;
+    letter-spacing: -0.03em;
+    margin-right: auto;
+    color: var(--text);
+  }
+  .logo span { color: var(--accent-fb); }
+  .tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 16px;
+    border-radius: 40px;
+    border: 1.5px solid transparent;
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .tab-btn:hover { color: var(--text); background: var(--surface2); }
+  .tab-btn.active { color: var(--text); background: var(--surface2); border-color: var(--border); }
+  .tab-btn.active[data-tab="facebook"] { border-color: var(--accent-fb); color: var(--accent-fb); }
+  .tab-btn.active[data-tab="linkedin"] { border-color: var(--accent-li); color: var(--accent-li); }
+  .tab-btn.active[data-tab="dashboard"] { border-color: var(--accent-dash); color: var(--accent-dash); }
+  .tab-btn.active[data-tab="settings"] { border-color: var(--accent-set); color: var(--accent-set); }
+  .tab-icon { font-size: 1.1rem; }
+  /* ── PANELS ── */
+  .panel { display: none; padding: 28px 24px; max-width: 1200px; margin: 0 auto; }
+  .panel.active { display: block; }
+  /* ── PLATFORM HEADER ── */
+  .platform-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .platform-title {
+    font-family: var(--font-head);
+    font-weight: 800;
+    font-size: 1.6rem;
+    letter-spacing: -0.03em;
+  }
+  .add-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 40px;
+    border: none;
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .add-btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
+  .add-btn-fb { background: var(--accent-fb); color: #fff; }
+  .add-btn-li { background: var(--accent-li); color: #fff; }
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(6px);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    width: 100%;
+    max-width: 560px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 28px;
+    animation: popIn 0.25s ease;
+  }
+  @keyframes popIn {
+    from { transform: scale(0.92) translateY(20px); opacity: 0; }
+    to { transform: scale(1) translateY(0); opacity: 1; }
+  }
+  .modal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 22px;
+  }
+  .modal-title {
+    font-family: var(--font-head);
+    font-weight: 700;
+    font-size: 1.2rem;
+  }
+  .close-btn {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .close-btn:hover { background: var(--surface2); color: var(--text); }
+  .field { margin-bottom: 16px; }
+  .field label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .field input, .field textarea {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    padding: 10px 14px;
+    transition: border-color 0.2s;
+    outline: none;
+    resize: vertical;
+  }
+  .field input:focus, .field textarea:focus { border-color: var(--accent-fb); }
+  .field textarea { min-height: 90px; }
+  .img-upload-area {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .img-upload-area:hover { border-color: var(--accent-fb); background: var(--surface2); }
+  .img-upload-area input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    border: none; padding: 0;
+  }
+  .img-upload-area .upload-icon { font-size: 2rem; margin-bottom: 6px; }
+  .img-upload-area p { font-size: 0.82rem; color: var(--muted); }
+  .img-preview { width: 100%; border-radius: 10px; margin-top: 10px; max-height: 200px; object-fit: cover; display: none; }
+  .save-btn {
+    width: 100%;
+    padding: 12px;
+    border-radius: 12px;
+    border: none;
+    font-family: var(--font-head);
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 4px;
+  }
+  .save-btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
+  .save-btn-fb { background: var(--accent-fb); color: #fff; }
+  .save-btn-li { background: var(--accent-li); color: #fff; }
+  /* ── CARDS GRID ── */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 18px;
+  }
+  .post-card {
+    background: var(--card-bg);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: all 0.25s;
+    position: relative;
+  }
+  .post-card:hover { transform: translateY(-3px); border-color: var(--accent-fb); box-shadow: 0 12px 40px rgba(79,127,255,0.12); }
+  .post-card.linkedin:hover { border-color: var(--accent-li); box-shadow: 0 12px 40px rgba(0,180,160,0.12); }
+  .card-img-wrap {
+    position: relative;
+    aspect-ratio: 16/9;
+    background: var(--surface2);
+    overflow: hidden;
+    cursor: pointer;
+  }
+  .card-img-wrap img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
+  .card-img-wrap:hover img { transform: scale(1.04); }
+  .card-img-placeholder {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2.5rem; color: var(--muted);
+  }
+  .card-img-overlay {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.55);
+    display: flex; align-items: center; justify-content: center;
+    gap: 12px;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .card-img-wrap:hover .card-img-overlay { opacity: 1; }
+  .overlay-btn {
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,0.2);
+    backdrop-filter: blur(4px);
+    color: #fff;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .overlay-btn:hover { background: rgba(255,255,255,0.35); transform: scale(1.1); }
+  .card-body { padding: 14px 16px; }
+  .card-date { font-size: 0.72rem; color: var(--muted); font-weight: 500; margin-bottom: 8px; }
+  .card-hook {
+    font-family: var(--font-head);
+    font-weight: 700;
+    font-size: 0.95rem;
+    line-height: 1.35;
+    margin-bottom: 6px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .card-desc {
+    font-size: 0.8rem;
+    color: var(--muted);
+    line-height: 1.55;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+  .card-checks {
+    display: flex;
+    gap: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .check-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 11px;
+    border-radius: 40px;
+    border: 1.5px solid var(--border);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+    color: var(--muted);
+  }
+  .check-pill:hover { border-color: var(--muted); }
+  .check-pill.posted { border-color: var(--accent-fb); background: rgba(79,127,255,0.1); color: var(--accent-fb); }
+  .check-pill.worked { border-color: var(--success); background: rgba(74,222,128,0.1); color: var(--success); }
+  .check-pill.posted.linkedin { border-color: var(--accent-li); background: rgba(0,180,160,0.1); color: var(--accent-li); }
+  .card-del {
+    position: absolute;
+    top: 10px; right: 10px;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(4px);
+    color: #fff;
+    font-size: 0.75rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .post-card:hover .card-del { opacity: 1; }
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+  }
+  .empty-state .e-icon { font-size: 3rem; margin-bottom: 12px; }
+  .empty-state p { font-size: 0.9rem; }
+  /* ── DASHBOARD ── */
+  .dash-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .stat-card {
+    background: var(--card-bg);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+  .stat-label { font-size: 0.75rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 8px; }
+  .stat-value { font-family: var(--font-head); font-weight: 800; font-size: 2.2rem; letter-spacing: -0.04em; }
+  .stat-value.fb { color: var(--accent-fb); }
+  .stat-value.li { color: var(--accent-li); }
+  .stat-value.green { color: var(--success); }
+  .stat-value.warn { color: var(--warning); }
+  .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 28px; }
+  @media(max-width:700px){ .charts-row { grid-template-columns: 1fr; } }
+  .chart-card {
+    background: var(--card-bg);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+  .chart-title { font-family: var(--font-head); font-weight: 700; font-size: 0.95rem; margin-bottom: 18px; }
+  canvas { width: 100% !important; }
+  /* ── SETTINGS ── */
+  .settings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; }
+  .settings-card {
+    background: var(--card-bg);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px;
+  }
+  .settings-card h3 { font-family: var(--font-head); font-weight: 700; font-size: 1rem; margin-bottom: 16px; }
+  .setting-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .setting-label { font-size: 0.85rem; color: var(--muted); }
+  /* Toggle */
+  .toggle { position: relative; width: 46px; height: 26px; }
+  .toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+  .toggle-track {
+    position: absolute; inset: 0;
+    background: var(--border);
+    border-radius: 40px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .toggle input:checked + .toggle-track { background: var(--accent-set); }
+  .toggle-track::after {
+    content: '';
+    position: absolute;
+    width: 20px; height: 20px;
+    background: #fff;
+    border-radius: 50%;
+    top: 3px; left: 3px;
+    transition: transform 0.2s;
+  }
+  .toggle input:checked + .toggle-track::after { transform: translateX(20px); }
+  /* Color swatches */
+  .swatches { display: flex; gap: 10px; flex-wrap: wrap; }
+  .swatch {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: transform 0.15s, border-color 0.15s;
+  }
+  .swatch:hover { transform: scale(1.15); }
+  .swatch.active { border-color: var(--text); }
+  /* Font selector */
+  .font-opts { display: flex; gap: 8px; flex-wrap: wrap; }
+  .font-opt {
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .font-opt:hover { color: var(--text); }
+  .font-opt.active { border-color: var(--accent-set); color: var(--accent-set); background: rgba(192,132,252,0.08); }
+  /* Toast */
+  #toast {
+    position: fixed;
+    bottom: 28px; right: 28px;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 18px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+    z-index: 9999;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  #toast.show { transform: translateY(0); opacity: 1; }
+  /* Responsive */
+  @media(max-width:520px){
+    nav { padding: 0 12px; gap: 3px; }
+    .tab-btn { padding: 6px 10px; font-size: 0.78rem; }
+    .panel { padding: 20px 14px; }
+    .cards-grid { grid-template-columns: 1fr; }
+  }
+  .filter-bar {
+    display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;
+  }
+  .filter-btn {
+    padding: 6px 14px;
+    border-radius: 40px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: var(--font-body);
+  }
+  .filter-btn.active, .filter-btn:hover { color: var(--text); border-color: var(--muted); }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">Content<span>Vault</span></div>
+  <button class="tab-btn active" data-tab="facebook" onclick="switchTab('facebook',this)">
+    <span class="tab-icon">📘</span> Facebook
+  </button>
+  <button class="tab-btn" data-tab="linkedin" onclick="switchTab('linkedin',this)">
+    <span class="tab-icon">💼</span> LinkedIn
+  </button>
+  <button class="tab-btn" data-tab="dashboard" onclick="switchTab('dashboard',this)">
+    <span class="tab-icon">📊</span> Dashboard
+  </button>
+  <button class="tab-btn" data-tab="settings" onclick="switchTab('settings',this)">
+    <span class="tab-icon">⚙️</span> Settings
+  </button>
+</nav>
+
+<!-- ─────────────────── FACEBOOK PANEL ─────────────────── -->
+<div id="panel-facebook" class="panel active">
+  <div class="platform-header">
+    <div class="platform-title">📘 Facebook Posts</div>
+    <button class="add-btn add-btn-fb" onclick="openModal('fb')">＋ New Post</button>
+  </div>
+  <div class="filter-bar">
+    <button class="filter-btn active" onclick="setFilter('fb','all',this)">All</button>
+    <button class="filter-btn" onclick="setFilter('fb','not-posted',this)">Not Posted</button>
+    <button class="filter-btn" onclick="setFilter('fb','posted',this)">Posted</button>
+    <button class="filter-btn" onclick="setFilter('fb','worked',this)">Worked ✅</button>
+  </div>
+  <div class="cards-grid" id="fb-grid"></div>
+</div>
+
+<!-- ─────────────────── LINKEDIN PANEL ─────────────────── -->
+<div id="panel-linkedin" class="panel">
+  <div class="platform-header">
+    <div class="platform-title">💼 LinkedIn Posts</div>
+    <button class="add-btn add-btn-li" onclick="openModal('li')">＋ New Post</button>
+  </div>
+  <div class="filter-bar">
+    <button class="filter-btn active" onclick="setFilter('li','all',this)">All</button>
+    <button class="filter-btn" onclick="setFilter('li','not-posted',this)">Not Posted</button>
+    <button class="filter-btn" onclick="setFilter('li','posted',this)">Posted</button>
+    <button class="filter-btn" onclick="setFilter('li','worked',this)">Worked ✅</button>
+  </div>
+  <div class="cards-grid" id="li-grid"></div>
+</div>
+
+<!-- ─────────────────── DASHBOARD PANEL ─────────────────── -->
+<div id="panel-dashboard" class="panel">
+  <div class="platform-title" style="margin-bottom:24px">📊 Dashboard</div>
+  <div class="dash-grid" id="stat-cards"></div>
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-title">Posts Over Time</div>
+      <canvas id="timelineChart" height="200"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Platform Breakdown</div>
+      <canvas id="platformChart" height="200"></canvas>
+    </div>
+  </div>
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-title">Posted vs Pending</div>
+      <canvas id="statusChart" height="200"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Success Rate</div>
+      <canvas id="successChart" height="200"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────────────── SETTINGS PANEL ─────────────────── -->
+<div id="panel-settings" class="panel">
+  <div class="platform-title" style="margin-bottom:24px">⚙️ App Settings</div>
+  <div class="settings-grid">
+    <div class="settings-card">
+      <h3>🎨 Theme</h3>
+      <div class="setting-row">
+        <span class="setting-label">Dark Mode</span>
+        <label class="toggle">
+          <input type="checkbox" id="darkToggle" checked onchange="toggleDark(this)">
+          <div class="toggle-track"></div>
+        </label>
+      </div>
+    </div>
+    <div class="settings-card">
+      <h3>🖌️ Accent Color</h3>
+      <div class="swatches">
+        <div class="swatch active" style="background:#4f7fff" onclick="setAccent('#4f7fff',this)" title="Blue"></div>
+        <div class="swatch" style="background:#ff6b6b" onclick="setAccent('#ff6b6b',this)" title="Red"></div>
+        <div class="swatch" style="background:#4ade80" onclick="setAccent('#4ade80',this)" title="Green"></div>
+        <div class="swatch" style="background:#fbbf24" onclick="setAccent('#fbbf24',this)" title="Yellow"></div>
+        <div class="swatch" style="background:#c084fc" onclick="setAccent('#c084fc',this)" title="Purple"></div>
+        <div class="swatch" style="background:#00b4a0" onclick="setAccent('#00b4a0',this)" title="Teal"></div>
+        <div class="swatch" style="background:#f472b6" onclick="setAccent('#f472b6',this)" title="Pink"></div>
+      </div>
+    </div>
+    <div class="settings-card">
+      <h3>🔤 Font Style</h3>
+      <div class="font-opts">
+        <button class="font-opt active" onclick="setFont('Syne',this)">Syne</button>
+        <button class="font-opt" onclick="setFont('Georgia',this)">Georgia</button>
+        <button class="font-opt" onclick="setFont('Courier New',this)">Mono</button>
+        <button class="font-opt" onclick="setFont('Trebuchet MS',this)">Trebuchet</button>
+      </div>
+    </div>
+    <div class="settings-card">
+      <h3>🗑️ Data</h3>
+      <div class="setting-row">
+        <span class="setting-label">Clear all Facebook posts</span>
+        <button class="filter-btn" onclick="clearPlatform('fb')">Clear</button>
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">Clear all LinkedIn posts</span>
+        <button class="filter-btn" onclick="clearPlatform('li')">Clear</button>
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">Clear EVERYTHING</span>
+        <button class="filter-btn" style="border-color:#ff6b6b;color:#ff6b6b" onclick="clearAll()">Reset</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────────────── MODAL ─────────────────── -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="modal-title">New Post</div>
+      <button class="close-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div class="field">
+      <label>Image</label>
+      <div class="img-upload-area" id="upload-area">
+        <input type="file" accept="image/*" id="imgInput" onchange="previewImg(this)">
+        <div class="upload-icon">🖼️</div>
+        <p>Click to upload image</p>
+      </div>
+      <img id="imgPreview" class="img-preview" alt="preview">
+    </div>
+    <div class="field">
+      <label>Hook</label>
+      <textarea id="hookInput" placeholder="Your attention-grabbing hook..." rows="2"></textarea>
+    </div>
+    <div class="field">
+      <label>Description</label>
+      <textarea id="descInput" placeholder="Full post description..." rows="4"></textarea>
+    </div>
+    <div class="field">
+      <label>Scheduled Date</label>
+      <input type="date" id="dateInput">
+    </div>
+    <button class="save-btn" id="saveBtn" onclick="savePost()">Save Post</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast">
+  <span id="toast-icon">✅</span>
+  <span id="toast-msg">Done!</span>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// ── STATE ──
+let state = JSON.parse(localStorage.getItem('cv_state') || '{"fb":[],"li":[]}');
+let currentPlatform = 'fb';
+let filters = { fb: 'all', li: 'all' };
+let editId = null;
+let currentImgBase64 = null;
+
+function save() { localStorage.setItem('cv_state', JSON.stringify(state)); }
+
+// ── TABS ──
+function switchTab(tab, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + tab).classList.add('active');
+  btn.classList.add('active');
+  if (tab === 'dashboard') renderDashboard();
+}
+
+// ── MODAL ──
+function openModal(platform, id = null) {
+  currentPlatform = platform;
+  editId = id;
+  currentImgBase64 = null;
+
+  const isLi = platform === 'li';
+  document.getElementById('modal-title').textContent = id ? 'Edit Post' : (isLi ? '💼 New LinkedIn Post' : '📘 New Facebook Post');
+  document.getElementById('saveBtn').className = 'save-btn ' + (isLi ? 'save-btn-li' : 'save-btn-fb');
+  document.getElementById('saveBtn').textContent = id ? 'Update Post' : 'Save Post';
+
+  // Reset
+  document.getElementById('hookInput').value = '';
+  document.getElementById('descInput').value = '';
+  document.getElementById('dateInput').value = '';
+  document.getElementById('imgPreview').style.display = 'none';
+  document.getElementById('imgInput').value = '';
+
+  if (id) {
+    const post = state[platform].find(p => p.id === id);
+    if (post) {
+      document.getElementById('hookInput').value = post.hook;
+      document.getElementById('descInput').value = post.desc;
+      document.getElementById('dateInput').value = post.date;
+      if (post.img) {
+        document.getElementById('imgPreview').src = post.img;
+        document.getElementById('imgPreview').style.display = 'block';
+        currentImgBase64 = post.img;
+      }
+    }
+  }
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('modal').classList.remove('open'); editId = null; }
+document.getElementById('modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+
+function previewImg(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    currentImgBase64 = e.target.result;
+    const prev = document.getElementById('imgPreview');
+    prev.src = currentImgBase64;
+    prev.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function savePost() {
+  const hook = document.getElementById('hookInput').value.trim();
+  const desc = document.getElementById('descInput').value.trim();
+  const date = document.getElementById('dateInput').value;
+  if (!hook && !desc) { showToast('⚠️', 'Add at least a hook or description'); return; }
+
+  if (editId) {
+    const idx = state[currentPlatform].findIndex(p => p.id === editId);
+    if (idx !== -1) {
+      state[currentPlatform][idx] = { ...state[currentPlatform][idx], hook, desc, date, img: currentImgBase64 };
+    }
+    showToast('✏️', 'Post updated!');
+  } else {
+    const post = { id: Date.now().toString(), hook, desc, date, img: currentImgBase64, posted: false, worked: false, createdAt: new Date().toISOString() };
+    state[currentPlatform].unshift(post);
+    showToast('✅', 'Post saved!');
+  }
+  save();
+  closeModal();
+  renderGrid(currentPlatform);
+}
+
+// ── RENDER GRID ──
+function renderGrid(platform) {
+  const grid = document.getElementById(platform + '-grid');
+  const filter = filters[platform];
+  let posts = [...state[platform]];
+  if (filter === 'posted') posts = posts.filter(p => p.posted);
+  if (filter === 'not-posted') posts = posts.filter(p => !p.posted);
+  if (filter === 'worked') posts = posts.filter(p => p.worked);
+
+  if (!posts.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="e-icon">📭</div><p>No posts yet. Click "New Post" to add one!</p></div>`;
+    return;
+  }
+  grid.innerHTML = posts.map(p => cardHTML(p, platform)).join('');
+}
+
+function cardHTML(p, platform) {
+  const isLi = platform === 'li';
+  const dateStr = p.date ? new Date(p.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'No date';
+  const imgContent = p.img
+    ? `<img src="${p.img}" alt="post image" loading="lazy">`
+    : `<div class="card-img-placeholder">🖼️</div>`;
+  return `
+  <div class="post-card ${isLi ? 'linkedin' : ''}" id="card-${p.id}">
+    <button class="card-del" onclick="deletePost('${platform}','${p.id}')" title="Delete">✕</button>
+    <div class="card-img-wrap" onclick="handleImgClick('${platform}','${p.id}')">
+      ${imgContent}
+      <div class="card-img-overlay">
+        ${p.img ? `<button class="overlay-btn" title="Download image" onclick="event.stopPropagation();downloadImg('${p.id}','${platform}')">⬇️</button>` : ''}
+        <button class="overlay-btn" title="Copy Hook + Description" onclick="event.stopPropagation();copyContent('${p.id}','${platform}')">📋</button>
+        <button class="overlay-btn" title="Edit post" onclick="event.stopPropagation();openModal('${platform}','${p.id}')">✏️</button>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="card-date">📅 ${dateStr}</div>
+      <div class="card-hook">${escHtml(p.hook) || '<em style="opacity:.4">No hook</em>'}</div>
+      <div class="card-desc">${escHtml(p.desc) || '<em style="opacity:.4">No description</em>'}</div>
+      <div class="card-checks">
+        <div class="check-pill ${p.posted ? 'posted' + (isLi ? ' linkedin' : '') : ''}" onclick="toggleCheck('${platform}','${p.id}','posted')">
+          ${p.posted ? '✓' : '○'} Posted
+        </div>
+        <div class="check-pill ${p.worked ? 'worked' : ''}" onclick="toggleCheck('${platform}','${p.id}','worked')">
+          ${p.worked ? '✓' : '○'} Worked
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function escHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+// ── IMAGE CLICK = download + copy ──
+function handleImgClick(platform, id) {
+  const post = state[platform].find(p => p.id === id);
+  if (!post) return;
+  if (post.img) downloadImg(id, platform);
+  copyContent(id, platform);
+}
+
+function downloadImg(id, platform) {
+  const post = state[platform].find(p => p.id === id);
+  if (!post || !post.img) return;
+  const a = document.createElement('a');
+  a.href = post.img;
+  a.download = `post-${id}.jpg`;
+  a.click();
+  showToast('⬇️', 'Image downloading…');
+}
+
+function copyContent(id, platform) {
+  const post = state[platform].find(p => p.id === id);
+  if (!post) return;
+  const text = `${post.hook || ''}\n\n${post.desc || ''}`.trim();
+  navigator.clipboard.writeText(text).then(() => showToast('📋', 'Hook + Description copied!'));
+}
+
+// ── TOGGLE ──
+function toggleCheck(platform, id, field) {
+  const post = state[platform].find(p => p.id === id);
+  if (!post) return;
+  post[field] = !post[field];
+  save();
+  renderGrid(platform);
+}
+
+function deletePost(platform, id) {
+  if (!confirm('Delete this post?')) return;
+  state[platform] = state[platform].filter(p => p.id !== id);
+  save();
+  renderGrid(platform);
+  showToast('🗑️', 'Post deleted');
+}
+
+// ── FILTER ──
+function setFilter(platform, value, btn) {
+  filters[platform] = value;
+  const bar = btn.closest('.filter-bar');
+  bar.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderGrid(platform);
+}
+
+// ── DASHBOARD ──
+let chartInstances = {};
+
+function renderDashboard() {
+  const fb = state.fb, li = state.li;
+  const fbPosted = fb.filter(p => p.posted).length;
+  const liPosted = li.filter(p => p.posted).length;
+  const fbWorked = fb.filter(p => p.worked).length;
+  const liWorked = li.filter(p => p.worked).length;
+  const total = fb.length + li.length;
+  const totalPosted = fbPosted + liPosted;
+  const totalWorked = fbWorked + liWorked;
+
+  document.getElementById('stat-cards').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Total Posts</div><div class="stat-value">${total}</div></div>
+    <div class="stat-card"><div class="stat-label">Facebook Posts</div><div class="stat-value fb">${fb.length}</div></div>
+    <div class="stat-card"><div class="stat-label">LinkedIn Posts</div><div class="stat-value li">${li.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Total Posted</div><div class="stat-value green">${totalPosted}</div></div>
+    <div class="stat-card"><div class="stat-label">Worked Well</div><div class="stat-value green">${totalWorked}</div></div>
+    <div class="stat-card"><div class="stat-label">Pending</div><div class="stat-value warn">${total - totalPosted}</div></div>
+  `;
+
+  const isDark = document.body.getAttribute('data-theme') !== 'light';
+  const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+  const tickColor = isDark ? '#7878a0' : '#9090b0';
+  const defaults = { responsive: true, plugins: { legend: { labels: { color: tickColor, font: { family: 'DM Sans' } } } } };
+
+  // Timeline (group posts by month)
+  const allPosts = [...fb.map(p => ({...p, plt:'FB'})), ...li.map(p => ({...p, plt:'LI'}))];
+  const byMonth = {};
+  allPosts.forEach(p => {
+    const m = p.date ? p.date.slice(0,7) : (p.createdAt ? p.createdAt.slice(0,7) : 'unknown');
+    if (!byMonth[m]) byMonth[m] = { fb: 0, li: 0 };
+    if (p.plt === 'FB') byMonth[m].fb++;
+    else byMonth[m].li++;
+  });
+  const months = Object.keys(byMonth).sort();
+  destroyChart('timelineChart');
+  chartInstances.timelineChart = new Chart(document.getElementById('timelineChart'), {
+    type: 'line',
+    data: {
+      labels: months.length ? months : ['No data'],
+      datasets: [
+        { label: 'Facebook', data: months.map(m => byMonth[m].fb), borderColor: '#4f7fff', backgroundColor: 'rgba(79,127,255,0.12)', tension: 0.4, fill: true },
+        { label: 'LinkedIn', data: months.map(m => byMonth[m].li), borderColor: '#00b4a0', backgroundColor: 'rgba(0,180,160,0.12)', tension: 0.4, fill: true },
+      ]
+    },
+    options: { ...defaults, scales: { x: { ticks: { color: tickColor }, grid: { color: gridColor } }, y: { ticks: { color: tickColor }, grid: { color: gridColor }, beginAtZero: true } } }
+  });
+
+  // Platform donut
+  destroyChart('platformChart');
+  chartInstances.platformChart = new Chart(document.getElementById('platformChart'), {
+    type: 'doughnut',
+    data: { labels: ['Facebook', 'LinkedIn'], datasets: [{ data: [fb.length, li.length], backgroundColor: ['#4f7fff', '#00b4a0'], borderWidth: 0 }] },
+    options: { ...defaults }
+  });
+
+  // Status
+  destroyChart('statusChart');
+  chartInstances.statusChart = new Chart(document.getElementById('statusChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Facebook', 'LinkedIn'],
+      datasets: [
+        { label: 'Posted', data: [fbPosted, liPosted], backgroundColor: '#4ade80', borderRadius: 6 },
+        { label: 'Pending', data: [fb.length - fbPosted, li.length - liPosted], backgroundColor: '#fbbf24', borderRadius: 6 },
+      ]
+    },
+    options: { ...defaults, scales: { x: { stacked: true, ticks: { color: tickColor }, grid: { color: gridColor } }, y: { stacked: true, ticks: { color: tickColor }, grid: { color: gridColor }, beginAtZero: true } } }
+  });
+
+  // Success rate
+  destroyChart('successChart');
+  const fbRate = fb.length ? Math.round((fbWorked / fb.length) * 100) : 0;
+  const liRate = li.length ? Math.round((liWorked / li.length) * 100) : 0;
+  chartInstances.successChart = new Chart(document.getElementById('successChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Facebook', 'LinkedIn'],
+      datasets: [{ label: 'Success %', data: [fbRate, liRate], backgroundColor: ['#4f7fff', '#00b4a0'], borderRadius: 8 }]
+    },
+    options: { ...defaults, scales: { x: { ticks: { color: tickColor }, grid: { color: gridColor } }, y: { max: 100, ticks: { color: tickColor, callback: v => v + '%' }, grid: { color: gridColor }, beginAtZero: true } } }
+  });
+}
+
+function destroyChart(id) { if (chartInstances[id]) { chartInstances[id].destroy(); delete chartInstances[id]; } }
+
+// ── SETTINGS ──
+function toggleDark(input) {
+  document.body.setAttribute('data-theme', input.checked ? 'dark' : 'light');
+  localStorage.setItem('cv_theme', input.checked ? 'dark' : 'light');
+}
+
+function setAccent(color, el) {
+  document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  document.documentElement.style.setProperty('--accent-set', color);
+  localStorage.setItem('cv_accent', color);
+}
+
+function setFont(font, el) {
+  document.querySelectorAll('.font-opt').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  document.documentElement.style.setProperty('--font-head', `'${font}', sans-serif`);
+  localStorage.setItem('cv_font', font);
+}
+
+function clearPlatform(p) {
+  if (!confirm(`Clear all ${p === 'fb' ? 'Facebook' : 'LinkedIn'} posts?`)) return;
+  state[p] = []; save(); renderGrid(p);
+  showToast('🗑️', 'Posts cleared');
+}
+
+function clearAll() {
+  if (!confirm('Clear ALL posts? This cannot be undone.')) return;
+  state = { fb: [], li: [] }; save(); renderGrid('fb'); renderGrid('li');
+  showToast('🗑️', 'All data cleared');
+}
+
+// ── TOAST ──
+function showToast(icon, msg) {
+  document.getElementById('toast-icon').textContent = icon;
+  document.getElementById('toast-msg').textContent = msg;
+  const t = document.getElementById('toast');
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ── INIT ──
+(function init() {
+  // restore theme
+  const theme = localStorage.getItem('cv_theme') || 'dark';
+  if (theme === 'light') {
+    document.body.setAttribute('data-theme', 'light');
+    document.getElementById('darkToggle').checked = false;
+  }
+  // restore accent
+  const accent = localStorage.getItem('cv_accent');
+  if (accent) document.documentElement.style.setProperty('--accent-set', accent);
+  // today date as default
+  document.getElementById('dateInput').value = new Date().toISOString().split('T')[0];
+  renderGrid('fb');
+  renderGrid('li');
+})();
+</script>
+</body>
+</html>
